@@ -1,0 +1,49 @@
+services:
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: abcd
+      MINIO_ROOT_PASSWORD: abcd2345
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - mynet
+
+networks:
+  mynet:
+    driver: bridge
+
+volumes:
+  minio_data:
+
+
+
+
+#restart mean what to do if the container stop by it self.
+#the difference between stop container and down it is.
+#stop: just puse the container without delete any things.
+#down: delete the container && network and remain the image and the volume (we can use it if we change the docker-compose file).
+#volumes: where the data store in my machine.
+#":9001" the minio listen for all ports (can connect with other sevices).
+#commmands 
+#docker ps -a show all cintainer in pc and it's status
+#docker logs x >> show some info about service x like API port and webui port
+#docker stop x
+#docker start x
+#docker compose up -d
+#docker compose down x
+#docker rm x 
+#docker rm -f x
+#networks:
+#  mynet:
+#    driver: bridge
+#
+#volumes:
+#  minio_data:
+#here we create a volumes and network then assign them to each service (the services need to connect with each other have to be in the same newtork)
