@@ -1,11 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 from art_data import data_arts
-from minio import Minio
-from minio.error import S3Error
+import boto3
+from botocore.config import Config
 from datetime import datetime
 import json
 import io
+from helper.config import get_setting
 
 def lasts_art_of(topic):
 	url = f"https://www.coindesk.com/{topic}"
@@ -49,15 +50,18 @@ def lasts_art_of(topic):
 
 def scrap():
 
-	Client = Minio(
-		endpoint = "127.0.0.1:9000",
-		access_key = "abcd",
-		secret_key = "abcd2345",
-		secure = False
+	setting = get_setting()
+
+	Client = boto3.client(
+		"s3",
+		endpoint_url = setting.minio_endpoint,
+		aws_access_key_id = setting.minio_access_key,
+		aws_secret_access_key = setting.minio_secret_key,
+		config = Config(signature_version = "s3v4"),
+		region_name = 'us-east-1'
 	)
 
 	topics = ["markets", "tech", "business", "policy"]
-	bucket_name = "coindesk-raw"
 	now = datetime.now()
 	year = now.strftime("%Y")
 	month = now.strftime("%m")
@@ -68,23 +72,24 @@ def scrap():
 
 		data_arts(doc_topic_data)
 
+		jsonl_buffer = io.StringIO()
+		for art in doc_topic_data["list_of_art"]:
+			json.dump(art, jsonl_buffer)
+			jsonl_buffer.write('\n')
+
 		obj_name = f"{topic}/year={year}/month={month}/day={day}/articles_batch.jsonl"
-		tages = []
-		for art in doc_topic_data["list_of_art"] :
-			tages.extend(art["tags"])
-		jsonl_content = "\n".join([json.dumps(art) for art in doc_topic_data["list_of_art"] ])
-		data = io.BytesIO(jsonl_content.encode('utf-8'))
 
-		Client.put_object(
-			bucket_name = bucket_name,
-			object_name = obj_name,
-			length = len(jsonl_content),
-			data = data,
-			content_type = "application/x-jsonlines",
-			tags = tages,
-			metadata = topic
-		)
+		try :
+			Client.put_object(
+				Bucket = setting.minio_bucket_name,
+				Key = obj_name,
+				Body=jsonl_buffer.getvalue(),
+				ContentType = "application/x-jsonlines",
+			)
+			print(f"The article of tpoic :{topic} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
+		except Exception as e:
+			print(f"Upload failed: {e}")
 
-		print(f"The article of tpoic :{topic} in date {year}/{month}/{day} is puted into bucket :{bucket_name} successfuly")
+		
 scrap()
 

@@ -1,6 +1,7 @@
-from minio import Minio
-from minio.error import S3Error
+import boto3
+from botocore.config import Config
 import json
+from helper.config import get_setting
 def load_jsonl(file_path):
 	"""
 	Reads a JSONL file and returns a list of dictionaries.
@@ -20,33 +21,26 @@ def load_jsonl(file_path):
 
 def main():
 	
-	client = Minio(
-		endpoint="127.0.0.1:9000",
-		access_key="abcd",
-		secret_key="abcd2345",
-		secure=False
+	setting = get_setting()
+	client = boto3.client(
+		"s3",
+		endpoint_url = setting.minio_endpoint,
+		aws_access_key_id = setting.minio_access_key,
+		aws_secret_access_key = setting.minio_secret_key,
+		config = Config(signature_version='s3v4'),
+		region_name='us-east-1'
 	)
 
-	file_source = r"C:\Users\User\OneDrive\D_EN_project\JSON_DATA\art_tech.jsonl"
+	file_source = r"C:\Users\User\OneDrive\D_EN_project\JSON_DATA\art_policy.jsonl"
 	arts = load_jsonl(file_source)
 
-	bucket_name = "coindesk-raw"
-	destination_file = "tech/year=2026/month=1/day=31/articles_batch.jsonl"
+	bucket_name = setting.minio_bucket_name
+	destination_file = "policy/year=2026/month=1/day=31/articles_batch.jsonl"
 
-	found = client.bucket_exists(bucket_name=bucket_name)
-
-	if not (found):
-		client.make_bucket(bucket_name)
-		print("Created bucket", bucket_name)
-	else:
-		print("Bucket", bucket_name, "already exists")
-
-	client.fput_object(
-		bucket_name = bucket_name,
-		object_name = destination_file,
-		file_path = file_source,
-		content_type = "application/x-jsonlines",
-		user_metadata = {"topic":"markets"}
+	client.upload_file(
+		file_source,
+		bucket_name,
+		destination_file
 	)
 
 	print(
@@ -57,5 +51,6 @@ def main():
 if __name__ == "__main__":
 	try:
 		main()
-	except S3Error as exc:
-		print("error occurred.", exc)
+	except Exception as e:
+		print(f"\nThe message error is:\n {e}\n")
+		
