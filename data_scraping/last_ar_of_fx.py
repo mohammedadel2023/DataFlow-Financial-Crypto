@@ -1,7 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 from art_data import data_arts
+from minio import Minio
+from minio.error import S3Error
+from datetime import datetime
 import json
+import io
 
 def lasts_art_of(topic):
 	url = f"https://www.coindesk.com/{topic}"
@@ -44,31 +48,43 @@ def lasts_art_of(topic):
 	return doc_topic
 
 def scrap():
+
+	Client = Minio(
+		endpoint = "127.0.0.1:9000",
+		access_key = "abcd",
+		secret_key = "abcd2345",
+		secure = False
+	)
+
 	topics = ["markets", "tech", "business", "policy"]
+	bucket_name = "coindesk-raw"
+	now = datetime.now()
+	year = now.strftime("%Y")
+	month = now.strftime("%m")
+	day = now.strftime("%d")
 
 	for topic in topics:
-		# 1. Get the data
 		doc_topic_data = lasts_art_of(topic)
-		
-		# 2. Enrich the data
+
 		data_arts(doc_topic_data)
 
-		# 3. Save as JSONL
-		try:
-			# Change extension to .jsonl
-			file_path = fr"C:\Users\User\OneDrive\D_EN_project\JSON_DATA\art_{topic}.jsonl"
-			
-			print(f"Saving {topic} to {file_path}...")
-			
-			with open(file_path, "w", encoding="utf-8") as f:
-				# Loop through the list of articles
-				for article in doc_topic_data['list_of_art']:
-					# Dump ONE article per line
-					json_line = json.dumps(article, ensure_ascii=False)
-					f.write(json_line + "\n")
-					
-		except Exception as e:
-			print(f"Error saving {topic}: {e}")
+		obj_name = f"{topic}/year={year}/month={month}/day={day}/articles_batch.jsonl"
+		tages = []
+		for art in doc_topic_data["list_of_art"] :
+			tages.extend(art["tags"])
+		jsonl_content = "\n".join([json.dumps(art) for art in doc_topic_data["list_of_art"] ])
+		data = io.BytesIO(jsonl_content.encode('utf-8'))
 
+		Client.put_object(
+			bucket_name = bucket_name,
+			object_name = obj_name,
+			length = len(jsonl_content),
+			data = data,
+			content_type = "application/x-jsonlines",
+			tags = tages,
+			metadata = topic
+		)
+
+		print(f"The article of tpoic :{topic} in date {year}/{month}/{day} is puted into bucket :{bucket_name} successfuly")
 scrap()
 
