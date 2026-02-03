@@ -7,6 +7,11 @@ class setting (BaseSettings):
 	minio_endpoint : str
 	minio_access_key : str
 	minio_secret_key : str
+	postgres_user : str
+	postgres_dbname : str
+	postgres_passward : str
+	postgres_host : str
+	postgres_port : str
 
 
 	model_config=SettingsConfigDict(env_file=".env")

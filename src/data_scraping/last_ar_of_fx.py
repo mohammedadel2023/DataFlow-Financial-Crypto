@@ -50,46 +50,13 @@ def lasts_art_of(topic):
 
 def scrap():
 
-	setting = get_setting()
-
-	Client = boto3.client(
-		"s3",
-		endpoint_url = setting.minio_endpoint,
-		aws_access_key_id = setting.minio_access_key,
-		aws_secret_access_key = setting.minio_secret_key,
-		config = Config(signature_version = "s3v4"),
-		region_name = 'us-east-1'
-	)
-
 	topics = ["markets", "tech", "business", "policy"]
-	now = datetime.now()
-	year = now.strftime("%Y")
-	month = now.strftime("%m")
-	day = now.strftime("%d")
-
+	docs = []
 	for topic in topics:
 		doc_topic_data = lasts_art_of(topic)
 
 		data_arts(doc_topic_data)
+		docs.append(doc_topic_data)
+		return docs
 
-		jsonl_buffer = io.StringIO()
-		for art in doc_topic_data["list_of_art"]:
-			json.dump(art, jsonl_buffer)
-			jsonl_buffer.write('\n')
-
-		obj_name = f"{topic}/year={year}/month={month}/day={day}/articles_batch.jsonl"
-
-		try :
-			Client.put_object(
-				Bucket = setting.minio_bucket_name,
-				Key = obj_name,
-				Body=jsonl_buffer.getvalue(),
-				ContentType = "application/x-jsonlines",
-			)
-			print(f"The article of tpoic :{topic} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
-		except Exception as e:
-			print(f"Upload failed: {e}")
-
-		
-scrap()
 
