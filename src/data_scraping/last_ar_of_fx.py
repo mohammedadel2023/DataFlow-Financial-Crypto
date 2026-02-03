@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from art_data import data_arts
+from .art_data import data_arts
 import boto3
 from botocore.config import Config
 from datetime import datetime
@@ -57,6 +57,6 @@ def scrap():
 
 		data_arts(doc_topic_data)
 		docs.append(doc_topic_data)
-		return docs
+	return docs
 
 

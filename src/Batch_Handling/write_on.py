@@ -6,6 +6,12 @@ from datetime import datetime
 import json
 import io
 
+def json_serial(obj):
+
+	if isinstance(obj, datetime):
+		return obj.isoformat()
+	raise TypeError(f"Type {type(obj)} not serializable")
+
 def write_on_minio(docs):
 	setting = get_setting()
 
@@ -27,10 +33,11 @@ def write_on_minio(docs):
 
 		jsonl_buffer = io.StringIO()
 		for art in doc["list_of_art"]:
-			json.dump(art, jsonl_buffer)
+			json.dump(art, jsonl_buffer, default = json_serial)
 			jsonl_buffer.write('\n')
+		jsonl_buffer.seek(0)
 
-		obj_name = f"{doc["topic_name"]}/year={year}/month={month}/day={day}/articles_batch.jsonl"
+		obj_name = f"{doc['topic_name']}/year={year}/month={month}/day={day}/articles_batch.jsonl"
 
 		try :
 			Client.put_object(
@@ -39,7 +46,7 @@ def write_on_minio(docs):
 				Body=jsonl_buffer.getvalue(),
 				ContentType = "application/x-jsonlines",
 			)
-			print(f"The article of tpoic :{doc["topic_name"]} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
+			print(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
 		except Exception as e:
 			print(f"Upload failed: {e}")
 
@@ -49,7 +56,7 @@ def write_on_postgreSQL(docs, connect_str:str,table:str ="batch_data"):
 	now = datetime.now()
 	with psycopg.connect(connect_str) as conn:
 		try :
-			with conn.cursor as cur:
+			with conn.cursor() as cur:
 
 				for doc in docs:
 					for art in doc["list_of_art"]:
@@ -58,6 +65,7 @@ def write_on_postgreSQL(docs, connect_str:str,table:str ="batch_data"):
 					 INSERT INTO {table} (content_hash, title, publish_date, scraped_at)
 					  VALUES (%s, %s, %s, %s)
 					 """,(art["hash"], art["art_title"], art["time"], now))
-			cur.commit()
+			conn.commit()
+			print(f"The data is writen on postgreSQL successfully")
 		except Exception as e:
 			print(f"error ocure before commit data into postgreSQL :\n{e}")

@@ -1,6 +1,7 @@
 import hashlib
 import psycopg
 from helper.config import get_setting
+from datetime import datetime
 
 
 def time_processing(art):
@@ -18,7 +19,9 @@ def time_processing(art):
 			text = ""
 	time.append(text)
 	text_time = time[3] + time[4] + '/' + time[1]+ '/' + time[0] + '/' + time[2]
-	art['time'] = text_time
+	clean_date_str = text_time.replace("p.m.", "PM").replace("a.m.", "AM")
+	dt_object = datetime.strptime(clean_date_str, "%I:%M%p/%d/%b/%Y")
+	art['time'] = dt_object
 	return art['time']
 
 
@@ -28,7 +31,7 @@ def hashing(docs):
 	for doc in docs:
 		for art in doc["list_of_art"]:
 			sha256 = hashlib.sha256()
-			hash_text = time_processing(art) + art["art_title"]
+			hash_text = str(time_processing(art)) + art["art_title"]
 			#print(hash_text + "\n")
 			sha256.update(hash_text.encode('utf-8'))
 			art["hash"] = sha256.hexdigest()
@@ -70,7 +73,7 @@ def hashing(docs):
 def check_duplication(connect_str,docs, hash_column:str = "content_hash", table:str ="batch_data"):
 
 	with psycopg.connect(connect_str) as conn:
-		with conn.cursor as cur:
+		with conn.cursor() as cur:
 			for doc in docs:
 				hash_list = [d["hash"] for d in doc["list_of_art"]]
 				cur.execute(f"""
@@ -81,7 +84,8 @@ def check_duplication(connect_str,docs, hash_column:str = "content_hash", table:
 
 				existing_hashes = {row[0] for row in cur.fetchall()}
 
-				for art in doc["list_of_art"]:
-					if art["hash"] in existing_hashes:
-						doc["list_of_art"].remove(art)
+				doc["list_of_art"] = [
+					art for art in doc["list_of_art"] 
+					if art["hash"] not in existing_hashes
+				]
 
