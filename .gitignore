@@ -1,2 +1,5 @@
 .env
 JSON_DATA/
+.log
+airflow/logs
+airflow/plugins
