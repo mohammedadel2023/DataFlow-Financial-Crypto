@@ -3,6 +3,7 @@ JSON_DATA/
 .log
 airflow/logs
 airflow/plugins
+C:\Users\User\OneDrive\D_EN_project\airflow\dags\mydags.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

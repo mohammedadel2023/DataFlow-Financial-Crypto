@@ -11,7 +11,7 @@ class setting (BaseSettings):
 	postgres_dbname : str
 	postgres_passward : str
 	postgres_host : str
-	postgres_port : str
+	postgres_port : int
 	AIRFLOW_UID : int
 
 
