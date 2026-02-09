@@ -12,6 +12,8 @@ class setting (BaseSettings):
 	postgres_passward : str
 	postgres_host : str
 	postgres_port : str
+	AIRFLOW_UID : int
+
 
 
 	model_config=SettingsConfigDict(env_file=".env")
