@@ -58,13 +58,16 @@ def ex_art_data (art_obj):
 				art_obj["text"] = The_text
 
 		#   ---extract the tages of article---
+		try:
 
-		article_tags = soup.find("div",{"data-module-name":"article-tags"}).div
+			article_tags = soup.find("div",{"data-module-name":"article-tags"}).div
 
-		a_tags = article_tags.find_all("a")
+			a_tags = article_tags.find_all("a")
 
-		for a in a_tags:
-			art_obj["tags"].append(a.get_text())
+			for a in a_tags:
+				art_obj["tags"].append(a.get_text())
+		except:
+			pass
 
 	except Exception as e:
 		print(f"Failed to scrape {art_obj['art_add']}: {e}")
