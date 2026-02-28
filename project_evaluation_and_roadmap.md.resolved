@@ -1,0 +1,223 @@
+# DataFlow-Financial-Crypto — Evaluation & Learning Roadmap
+
+---
+
+## Part 1 — Evaluation of the Batch Layer
+
+### What You Built (Architecture)
+
+```
+CoinDesk (HTTP) ──► Scraper ──► Dedup (SHA-256 + Postgres) ──► MinIO (JSONL)
+                                                              └──► Postgres (metadata)
+Orchestrated by: Apache Airflow (CeleryExecutor + DockerOperator)
+Infra:           Docker Compose (Airflow + Redis + Postgres × 2 + MinIO)
+Config:          pydantic-settings (.env)
+```
+
+This is a real **Lambda Architecture Batch Layer** — not a toy. You orchestrated multiple containers, wired them together on a custom Docker network, and built a content-deduplication gate. That is solid foundational work.
+
+---
+
+### ✅ What You Did Well
+
+| Area | Good Decisions |
+|---|---|
+| **Infrastructure** | Two separate Postgres instances (one for Airflow metadata, one for your data) shows you understand separation of concerns |
+| **Deduplication** | SHA-256 on `title + datetime` is a practical and correct hashing strategy |
+| **Storage** | Date-partitioned JSONL paths in MinIO (`topic/year=/month=/day=`) follow Hive-partition conventions used by Spark/Athena in industry |
+| **Orchestration** | DockerOperator isolates the scraper — the right production-grade pattern |
+| **Config** | pydantic-settings with a [.env](file:///c:/Users/User/OneDrive/D_EN_project/.env) file is the correct way to handle secrets |
+| **Code structure** | Clean module separation: `Data_Scraping`, `Batch_Handling`, `helper` |
+
+---
+
+### ⚠️ Things to Improve (Learning Opportunities)
+
+#### 1. Fragile HTML Parsing (High Priority)
+**File:** [art_data.py](file:///c:/Users/User/OneDrive/D_EN_project/src/Data_Scraping/art_data.py), [last_ar_of_fx.py](file:///c:/Users/User/OneDrive/D_EN_project/src/Data_Scraping/last_ar_of_fx.py)
+
+CoinDesk uses dynamic class names like `flex flex-col` that change with CSS framework updates. The scraper will silently return empty results when this happens.
+
+**What to learn:** Distinguish between *static scraping* (BeautifulSoup) and *dynamic scraping* (Playwright/Selenium). Consider using the CoinDesk RSS feed or a public crypto news API (CryptoPanic, NewsAPI) for more stability.
+
+---
+
+#### 2. Brittle Date Parsing (High Priority)
+**File:** [duplicate_checking.py](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py) — [time_processing()](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#7-26)
+
+The manual string-split approach for dates like `"Updated Jan 31, 2026, 10:46 p.m."` is fragile. Any format change breaks everything silently.
+
+**What to learn:** Use `python-dateutil.parser.parse()` — it handles dozens of date formats automatically with one line.
+
+```python
+# Before (your code — 20+ lines)
+from dateutil import parser
+dt = parser.parse("Updated Jan 31, 2026, 10:46 p.m.", fuzzy=True)
+```
+
+---
+
+#### 3. No Error Recovery / Idempotency
+**File:** [write_on.py](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/write_on.py) — [write_on_minio()](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/write_on.py#15-52)
+
+If MinIO upload succeeds but Postgres write fails, you get data in the data lake but no metadata record. The next run won't re-upload to MinIO (file already exists) but Postgres never knows about it.
+
+**What to learn:** Transactions and idempotency patterns. Write Postgres metadata **first**, then upload to MinIO. Or use a "pending → confirmed" state column.
+
+---
+
+#### 4. Missing Logging
+**Current:** `print()` statements everywhere.
+
+**What to learn:** Python `logging` module. Replace prints with `logging.getLogger(__name__)`. This lets you control log levels (DEBUG/INFO/WARNING/ERROR) and integrates with Airflow's logging system automatically.
+
+---
+
+#### 5. Airflow DAG Has No End Task / Dependency Chain
+**File:** [docker_scraping_dag.py](file:///c:/Users/User/OneDrive/D_EN_project/airflow/dags/docker_scraping_dag.py)
+
+The DAG has only one task (`run_scraper_task`). A real DAG should show the pipeline stages explicitly so Airflow can track, alert on, and retry individual steps.
+
+**What to learn:** Airflow TaskFlow API / task dependencies (`>>` operator). Break the DAG into: `scrape >> deduplicate >> write_minio >> write_postgres`.
+
+---
+
+#### 6. No Tests
+There are no unit or integration tests. The commented-out test data in [duplicate_checking.py](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py) is a sign you felt the need for them.
+
+**What to learn:** `pytest`. Write tests for [time_processing()](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#7-26), [hashing()](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#29-39) and [check_duplication()](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#73-91) using a mock Postgres connection (pytest-mock).
+
+---
+
+## Part 2 — Learning Roadmap (Next Phases)
+
+> **Goal:** Build a complete Lambda + RAG system in 4 phases. Each phase has clear *"what you will learn"* goals.
+
+---
+
+### Phase 0 — Harden the Batch Layer *(~1–2 weeks)*
+
+**Goal:** Make what you have production-quality before building on top of it.
+
+| Task | Concept to Learn |
+|---|---|
+| Replace manual date parsing with `python-dateutil` | Robust data parsing |
+| Add Python `logging` throughout | Structured logging |
+| Write `pytest` tests for [hashing](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#29-39), [time_processing](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#7-26), [check_duplication](file:///c:/Users/User/OneDrive/D_EN_project/src/Batch_Handling/duplicate_checking.py#73-91) | Unit testing, mocking |
+| Add a `scraped_status` column to Postgres and write metadata *before* MinIO upload | Idempotency, transactions |
+| Break the Airflow DAG into 3+ tasks | Airflow TaskFlow API, DAG design |
+| Add a `README` section with architecture diagram | Technical documentation |
+
+**Milestone ✅:** All tests pass. You can deliberately crash MinIO and watch Postgres correctly show "pending" records.
+
+---
+
+### Phase 1 — Streaming Layer with Apache Kafka *(~3–4 weeks)*
+
+**Goal:** Understand the difference between batch and stream processing by adding a real-time data feed alongside your existing batch pipeline.
+
+#### What you will build
+A Kafka producer that ingests live crypto price ticks (from CoinGecko free API or Binance WebSocket) and a Kafka consumer that writes them to MinIO in micro-batches.
+
+#### Concepts to Learn
+
+| Concept | Tool | Why Important |
+|---|---|---|
+| **Message brokers** | Apache Kafka | Core of any streaming architecture |
+| **Topics, Partitions, Offsets** | Kafka fundamentals | How Kafka guarantees ordering and replay |
+| **Producers & Consumers** | `confluent-kafka` Python | The two roles in every streaming system |
+| **Consumer Groups** | Kafka | Horizontal scaling of stream consumers |
+| **Exactly-once vs at-least-once** | Kafka semantics | Critical for financial data |
+| **Schema evolution** | Apache Avro / JSON Schema | Real-world data contracts |
+
+#### Tasks
+1. Add Kafka + Zookeeper to your [docker-compose.yaml](file:///c:/Users/User/OneDrive/D_EN_project/docker-compose.yaml)
+2. Write a **Producer**: poll CoinGecko every 5 seconds → publish price tick as JSON to `crypto.prices` topic
+3. Write a **Consumer**: read from topic → buffer 60 ticks → write one JSONL file to MinIO at `stream/year=/month=/day=/hour=/minute/`
+4. Add a new Kafka consumer that writes price ticks to **TimescaleDB** (a Postgres extension for time-series)
+5. Visualize the stream with Kafka UI (open-source Docker container)
+
+**Milestone ✅:** You can watch live BTC prices flowing from the API → Kafka → MinIO in near-real-time.
+
+---
+
+### Phase 2 — RAG System (Retrieval-Augmented Generation) *(~3–4 weeks)*
+
+**Goal:** Make your stored news articles queryable with natural language. This directly uses the data your batch pipeline collects.
+
+#### What you will build
+A RAG pipeline that embeds news articles into ChromaDB and answers questions like *"Why did Bitcoin drop this week?"* using Qwen-2.5 via Ollama.
+
+#### Concepts to Learn
+
+| Concept | Tool | Why Important |
+|---|---|---|
+| **Embeddings** | `sentence-transformers` | How text becomes searchable vectors |
+| **Vector databases** | ChromaDB | The storage layer for semantic search |
+| **Chunking strategies** | LangChain / custom | Splitting long articles effectively |
+| **Similarity search** | Cosine distance | How RAG retrieves relevant context |
+| **Prompt engineering** | Ollama (Qwen-2.5) | How to get useful answers from LLMs |
+| **RAG pipeline** | LangChain or custom | Combine retrieval + generation |
+
+#### Tasks
+1. Add an Airflow DAG step: after writing to MinIO → read the article text → chunk it → embed it → store in ChromaDB
+2. Write a `rag_query.py` script: take a question → embed it → retrieve top-5 similar chunks → build a prompt → call Qwen-2.5 → return answer
+3. Add a simple Flask or FastAPI endpoint: `POST /ask` with `{"question": "why did BTC drop?"}` → returns LLM answer
+4. Add Ollama to your [docker-compose.yaml](file:///c:/Users/User/OneDrive/D_EN_project/docker-compose.yaml)
+
+**Milestone ✅:** You can ask *"What happened with Ethereum this week?"* via API and get a factual answer backed by real scraped articles.
+
+---
+
+### Phase 3 — Time-Series Analysis *(~2–3 weeks)*
+
+**Goal:** Use the stream data from Phase 1 to detect patterns and anomalies in crypto prices — the "Why did BTC crash?" numerical side to complement the RAG "news" side.
+
+#### What you will build
+Anomaly detection on price streams stored in TimescaleDB, with results fed back to enrich RAG context.
+
+#### Concepts to Learn
+
+| Concept | Tool | Why Important |
+|---|---|---|
+| **Time-series DB** | TimescaleDB | Efficient range queries and aggregations on timestamped data |
+| **Windowed aggregations** | SQL / Pandas | Rolling averages, VWAP, volatility |
+| **Anomaly detection** | Z-score / Isolation Forest | Detecting unusual price moves |
+| **Correlation analysis** | Pearson / Spearman | Do price moves correlate with news sentiment? |
+| **Feature engineering** | Pandas | Creating ML features from raw tick data |
+
+#### Tasks
+1. Query TimescaleDB for 1-hour OHLCV candles using window functions
+2. Detect price anomalies (e.g., >3% move in 5 minutes) using Z-score
+3. When an anomaly is detected → trigger a RAG query for that time window → store the "reason" back in Postgres
+4. Build a minimal dashboard with Grafana (free, Docker) to visualize price + anomaly events
+
+**Milestone ✅:** Your system can automatically detect "BTC dropped 5%" and surface related news articles from the same time window — the full Lambda Architecture vision.
+
+---
+
+## Learning Order Summary
+
+```
+[Now]  Phase 0: Harden Batch    → pytest, logging, idempotency, Airflow TaskFlow
+         ↓
+Phase 1: Kafka Streaming        → Kafka, producers/consumers, message brokers
+         ↓
+Phase 2: RAG                    → Embeddings, ChromaDB, LangChain, Ollama
+         ↓
+Phase 3: Time-Series            → TimescaleDB, anomaly detection, Grafana
+         ↓
+[Done] Full Lambda + RAG System  ← queryable with natural language + anomaly alerts
+```
+
+---
+
+## Recommended Learning Resources
+
+| Topic | Resource |
+|---|---|
+| Apache Airflow | [Airflow Official Tutorial](https://airflow.apache.org/docs/apache-airflow/stable/tutorial/index.html) |
+| Apache Kafka | *Kafka: The Definitive Guide* (free PDF from Confluent) |
+| RAG from scratch | *LangChain RAG Tutorial* on LangChain docs |
+| Time-series + Pandas | Towards Data Science "Time Series" collection |
+| pytest | *Python Testing with pytest* by Brian Okken |
