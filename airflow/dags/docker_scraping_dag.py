@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 DOCKER_NETWORK_NAME = "d_en_project_mynet" 
 
-IMAGE_NAME = "my_scraper_image:v2"
+IMAGE_NAME = "my_scraper_image:v9"
 
 default_args = {
 	'owner': 'airflow',
@@ -13,7 +13,7 @@ default_args = {
 	'email_on_failure': False,
 	'email_on_retry': False,
 	'retries': 1,
-	'retry_delay': timedelta(minutes=5),
+	'retry_delay': timedelta(minutes=3),
 }
 
 

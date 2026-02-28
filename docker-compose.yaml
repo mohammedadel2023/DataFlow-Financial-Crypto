@@ -430,3 +430,7 @@ networks:
 #volumes:
 #  minio_data:
 #here we create a volumes and network then assign them to each service (the services need to connect with each other have to be in the same newtork)
+
+
+#docker exec -it scraper_worker_job cat /app/logs.log here you enter the container and read the logs
+#docker exec -it scraper_worker_job ls here you enter the container and list the files

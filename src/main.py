@@ -8,9 +8,9 @@ import logging
 setting = get_setting()
 
 logging.basicConfig(
-    filename= "logs.log",
     level=setting.Log_level.upper(),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    force=True
 )
 
 logger = logging.getLogger(__name__)

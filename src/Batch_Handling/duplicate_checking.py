@@ -7,7 +7,9 @@ from dateutil import parser
 
 def time_processing(art):
 
-	art['time'] = parser.parse(art['time'])
+	clean_time = art['time'].replace("Updated", "").strip()
+	clean_time = clean_time.replace("updated", "").strip()
+	art['time'] = parser.parse(clean_time)
 	return art['time']
 
 
