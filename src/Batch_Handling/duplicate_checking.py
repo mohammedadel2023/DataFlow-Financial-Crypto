@@ -56,7 +56,7 @@ def hashing(docs):
 
 # duplication checking 
 
-def check_duplication(connect_str,docs, hash_column:str = "content_hash", table:str ="batch_data"):
+def check_duplication(connect_str, docs, hash_column: str="content_hash", table: str="batch_data"):
 
 	with psycopg.connect(connect_str) as conn:
 		with conn.cursor() as cur:

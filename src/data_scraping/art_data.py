@@ -1,6 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 def ex_art_data (art_obj):
 	try:
@@ -32,7 +35,7 @@ def ex_art_data (art_obj):
 					if (wr_date[1].find('span')):
 						art_obj["time"] = wr_date[1].find('span').get_text(strip=True)
 		except Exception as e:
-			print(f"Error parsing header for {art_obj['art_add']}: {e}")
+			logger.error(f"Error parsing header for {art_obj['art_add']}: {e}")
 
 		# extract "what to know part"
 		what_to_know = soup.find('ul', class_='unordered-list')
@@ -67,16 +70,16 @@ def ex_art_data (art_obj):
 			for a in a_tags:
 				art_obj["tags"].append(a.get_text())
 		except:
-			pass
+			logger.warning(f"no tags found for {art_obj['art_add']} we will skip it")
 
 	except Exception as e:
-		print(f"Failed to scrape {art_obj['art_add']}: {e}")
+		logger.error(f"error ocure before extract data for {art_obj['art_add']}: {e}")
 
 def data_arts (doc_arts):
 	arts = doc_arts["list_of_art"]
-	print(f"Scraping details for {len(arts)} articles in topic: {doc_arts['topic_name']}...")
+	logger.info(f"Scraping details for {len(arts)} articles in topic: {doc_arts['topic_name']}...")
 
 	for i, art in enumerate(arts):
 		ex_art_data(art)
-		print(f" - Scraped: {art['art_title'][:30]}...")
+		logger.info(f" - Scraped: {art['art_title'][:30]}...")
 		time.sleep(1)

@@ -59,4 +59,3 @@ def scrap():
 		docs.append(doc_topic_data)
 	return docs
 
-

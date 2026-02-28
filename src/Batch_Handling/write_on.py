@@ -5,6 +5,10 @@ from helper.config import get_setting
 from datetime import datetime
 import json
 import io
+import logging
+
+logger = logging.getLogger(__name__)
+    
 
 def json_serial(obj):
 
@@ -15,6 +19,7 @@ def json_serial(obj):
 def write_on_minio(docs):
 	setting = get_setting()
 
+	logger.debug("establish a connection with minio")
 	Client = boto3.client(
 		"s3",
 		endpoint_url = setting.minio_endpoint,
@@ -23,6 +28,8 @@ def write_on_minio(docs):
 		config = Config(signature_version = "s3v4"),
 		region_name = 'us-east-1'
 	)
+
+	logger.debug("the connection with minio is established successfuly")
 
 	now = datetime.now()
 	year = now.strftime("%Y")
@@ -46,16 +53,19 @@ def write_on_minio(docs):
 				Body=jsonl_buffer.getvalue(),
 				ContentType = "application/x-jsonlines",
 			)
-			print(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
+			logger.info(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
 		except Exception as e:
-			print(f"Upload failed: {e}")
+			logger.error(f"Upload failed: {e}")
 
 def write_on_postgreSQL(docs, connect_str:str,table:str ="batch_data"):
 
+	logger.debug("establish a connection with postgreSQL")
 	setting = get_setting()
 	now = datetime.now()
+	written_art = 0
 	with psycopg.connect(connect_str) as conn:
 		try :
+			logger.debug("the connection with postgreSQL is established successfuly")
 			with conn.cursor() as cur:
 
 				for doc in docs:
@@ -65,7 +75,8 @@ def write_on_postgreSQL(docs, connect_str:str,table:str ="batch_data"):
 					 INSERT INTO {table} (content_hash, title, publish_date, scraped_at)
 					  VALUES (%s, %s, %s, %s)
 					 """,(art["hash"], art["art_title"], art["time"], now))
+					written_art += 1
 			conn.commit()
-			print(f"The data is writen on postgreSQL successfully")
+			logger.info(f"{written_art} articles are written on PostgreSQL successfully")
 		except Exception as e:
-			print(f"error ocure before commit data into postgreSQL :\n{e}")
+			logger.error(f"error ocure before commit data into PostgreSQL :\n{e}")
