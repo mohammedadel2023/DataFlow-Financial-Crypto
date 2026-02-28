@@ -16,7 +16,7 @@ def json_serial(obj):
 		return obj.isoformat()
 	raise TypeError(f"Type {type(obj)} not serializable")
 
-def write_on_minio(docs):
+def write_on_minio(docs: list) ->None:
 	setting = get_setting()
 
 	logger.debug("establish a connection with minio")
@@ -57,7 +57,7 @@ def write_on_minio(docs):
 		except Exception as e:
 			logger.error(f"Upload failed: {e}")
 
-def write_on_postgreSQL(docs, connect_str:str,table:str ="batch_data"):
+def write_on_postgreSQL(docs: list, connect_str:str,table:str ="batch_data") -> None:
 
 	logger.debug("establish a connection with postgreSQL")
 	setting = get_setting()

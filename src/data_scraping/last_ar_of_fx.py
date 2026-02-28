@@ -7,11 +7,17 @@ from datetime import datetime
 import json
 import io
 from helper.config import get_setting
+import logging
 
-def lasts_art_of(topic):
+logger = logging.getLogger(__name__)
+
+def lasts_art_of(topic: str) -> dict:
+	logger.debug("start the lasts_art_of() function")
 	url = f"https://www.coindesk.com/{topic}"
 
+	logger.debug("establish a connection with coindesk")
 	response = requests.get(url)
+	logger.debug("the connection with coindesk is established successfuly")
 	soup = BeautifulSoup(response.text, 'html.parser')
 
 	doc_topic = {

@@ -12,7 +12,7 @@ def time_processing(art):
 
 
 
-def hashing(docs):
+def hashing(docs:list) -> None:
 
 	for doc in docs:
 		for art in doc["list_of_art"]:
@@ -56,7 +56,7 @@ def hashing(docs):
 
 # duplication checking 
 
-def check_duplication(connect_str, docs, hash_column: str="content_hash", table: str="batch_data"):
+def check_duplication(connect_str: str, docs: list, hash_column: str="content_hash", table: str="batch_data") -> None:
 
 	with psycopg.connect(connect_str) as conn:
 		with conn.cursor() as cur:

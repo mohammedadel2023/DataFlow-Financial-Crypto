@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def ex_art_data (art_obj):
+def ex_art_data (art_obj: dict) -> None:
 	try:
 
 		headers = {
@@ -75,7 +75,7 @@ def ex_art_data (art_obj):
 	except Exception as e:
 		logger.error(f"error ocure before extract data for {art_obj['art_add']}: {e}")
 
-def data_arts (doc_arts):
+def data_arts (doc_arts: dict) -> None:
 	arts = doc_arts["list_of_art"]
 	logger.info(f"Scraping details for {len(arts)} articles in topic: {doc_arts['topic_name']}...")
 
