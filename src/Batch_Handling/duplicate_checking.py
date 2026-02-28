@@ -2,26 +2,12 @@ import hashlib
 import psycopg
 from helper.config import get_setting
 from datetime import datetime
+from dateutil import parser
 
 
 def time_processing(art):
-	time = []
-	text = ""
-	start_idx = 0
-	if art["time"][0] == "U" or art["time"][0] == "u":
-		start_idx = 7
-	for i in range(start_idx, len(art["time"])):
-		if (art["time"][i] != " "):
-			if (art["time"][i] != ","):
-				text += (art["time"][i])
-		else:
-			time.append(text)
-			text = ""
-	time.append(text)
-	text_time = time[3] + time[4] + '/' + time[1]+ '/' + time[0] + '/' + time[2]
-	clean_date_str = text_time.replace("p.m.", "PM").replace("a.m.", "AM")
-	dt_object = datetime.strptime(clean_date_str, "%I:%M%p/%d/%b/%Y")
-	art['time'] = dt_object
+
+	art['time'] = parser.parse(art['time'])
 	return art['time']
 
 
