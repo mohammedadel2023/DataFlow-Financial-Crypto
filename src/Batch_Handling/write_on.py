@@ -16,7 +16,7 @@ def json_serial(obj):
 		return obj.isoformat()
 	raise TypeError(f"Type {type(obj)} not serializable")
 
-def write_on_minio(docs: list) ->None:
+def write_on_minio(docs: list) -> list[int]:
 	setting = get_setting()
 
 	logger.debug("establish a connection with minio")
@@ -35,6 +35,7 @@ def write_on_minio(docs: list) ->None:
 	year = now.strftime("%Y")
 	month = now.strftime("%m")
 	day = now.strftime("%d")
+	status = [0] * len(docs)
 
 	for doc in docs:
 
@@ -54,15 +55,18 @@ def write_on_minio(docs: list) ->None:
 				ContentType = "application/x-jsonlines",
 			)
 			logger.info(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
+			status.append(1)
 		except Exception as e:
 			logger.error(f"Upload failed: {e}")
+			status.append(0)
+	return status
 
-def write_on_postgreSQL(docs: list, connect_str:str,table:str ="batch_data") -> None:
+def write_on_postgreSQL(docs: list, connect_str:str, status:list, table:str ="batch_data") -> None:
 
 	logger.debug("establish a connection with postgreSQL")
-	setting = get_setting()
 	now = datetime.now()
 	written_art = 0
+	idx = 0
 	with psycopg.connect(connect_str) as conn:
 		try :
 			logger.debug("the connection with postgreSQL is established successfuly")
@@ -72,10 +76,11 @@ def write_on_postgreSQL(docs: list, connect_str:str,table:str ="batch_data") -> 
 					for art in doc["list_of_art"]:
 
 						cur.execute(f"""
-					 INSERT INTO {table} (content_hash, title, publish_date, scraped_at)
-					  VALUES (%s, %s, %s, %s)
-					 """,(art["hash"], art["art_title"], art["time"], now))
+					 INSERT INTO {table} (content_hash, title, publish_date, scraped_at, status)
+					  VALUES (%s, %s, %s, %s, %s)
+					 """,(art["hash"], art["art_title"], art["time"], now,'uploaded' if status[idx] == 1 else 'pending'))
 					written_art += 1
+					idx += 1
 			conn.commit()
 			logger.info(f"{written_art} articles are written on PostgreSQL successfully")
 		except Exception as e:

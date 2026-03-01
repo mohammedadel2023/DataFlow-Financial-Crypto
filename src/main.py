@@ -27,9 +27,9 @@ check_duplication(connect_str, docs)
 
 logger.debug(" finish hashing() and check_duplication() and enter the write_on_minio() function")
 # 3- uploading on db's
-write_on_minio(docs)
+status = write_on_minio(docs)
 
 logger.debug(" finish write_on_minio() and enter the write_on_postgreSQL() function")
-write_on_postgreSQL(docs, connect_str)
+write_on_postgreSQL(docs, connect_str, status)
 
 logger.debug(" finish write_on_postgreSQL() and exit the program")
