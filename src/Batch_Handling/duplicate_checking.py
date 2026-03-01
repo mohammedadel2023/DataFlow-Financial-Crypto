@@ -58,22 +58,29 @@ def hashing(docs:list) -> None:
 
 # duplication checking 
 
-def check_duplication(connect_str: str, docs: list, hash_column: str="content_hash", table: str="batch_data") -> None:
+def check_duplication(connect_str: str, docs: list, hash_column: str="content_hash",
+					  status_column: str="status", table: str="batch_data") -> None:
 
 	with psycopg.connect(connect_str) as conn:
 		with conn.cursor() as cur:
 			for doc in docs:
 				hash_list = [d["hash"] for d in doc["list_of_art"]]
 				cur.execute(f"""
-				SELECT {hash_column} 
+				SELECT {hash_column}, {status_column} 
 				FROM {table}
 				WHERE {hash_column} = ANY(%s)
 				""",(hash_list,))
 
-				existing_hashes = {row[0] for row in cur.fetchall()}
+				existing_hashes = {row[0]: row[1] for row in cur.fetchall()}
 
 				doc["list_of_art"] = [
 					art for art in doc["list_of_art"] 
-					if art["hash"] not in existing_hashes
+					if art["hash"] not in existing_hashes or existing_hashes[art["hash"]] == 'pending'
 				]
+				for art in doc["list_of_art"]:
+					if art["hash"] in existing_hashes and existing_hashes[art["hash"]] == 'pending':
+						art["on_postgress"] = False
+					else:
+						art["on_postgress"] = True
+						
 

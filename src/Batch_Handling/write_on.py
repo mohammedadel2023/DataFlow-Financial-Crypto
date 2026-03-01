@@ -16,7 +16,7 @@ def json_serial(obj):
 		return obj.isoformat()
 	raise TypeError(f"Type {type(obj)} not serializable")
 
-def write_on_minio(docs: list) -> list[int]:
+def write_on_minio(docs: list, connect_str:str) -> list[int]:
 	setting = get_setting()
 
 	logger.debug("establish a connection with minio")
@@ -56,6 +56,14 @@ def write_on_minio(docs: list) -> list[int]:
 			)
 			logger.info(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
 			status.append(1)
+
+			image_of_list = doc["list_of_art"]
+			updating_list = []
+			for art in image_of_list:
+				if art["on_postgress"] == False:
+					updating_list.append(art)
+					doc["list_of_art"].remove(art)
+			update_status(updating_list, connect_str)
 		except Exception as e:
 			logger.error(f"Upload failed: {e}")
 			status.append(0)
@@ -83,5 +91,23 @@ def write_on_postgreSQL(docs: list, connect_str:str, status:list, table:str ="ba
 					idx += 1
 			conn.commit()
 			logger.info(f"{written_art} articles are written on PostgreSQL successfully")
+		except Exception as e:
+			logger.error(f"error ocure before commit data into PostgreSQL :\n{e}")
+
+def update_status(updating_list: list, connect_str:str, table:str ="batch_data") -> None:
+	logger.debug("establish a connection with postgreSQL")
+	now = datetime.now()
+	with psycopg.connect(connect_str) as conn:
+		try :
+			logger.debug("the connection with postgreSQL is established successfuly")
+			with conn.cursor() as cur:
+
+				for art in updating_list:
+
+					cur.execute(f"""
+					 UPDATE {table} SET status = 'uploaded' WHERE content_hash = %s
+					 """,(art["hash"]))
+				conn.commit()
+			logger.info(f"{len(updating_list)} articles are updated on PostgreSQL successfully")
 		except Exception as e:
 			logger.error(f"error ocure before commit data into PostgreSQL :\n{e}")
