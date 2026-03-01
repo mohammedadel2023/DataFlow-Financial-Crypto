@@ -35,7 +35,7 @@ def write_on_minio(docs: list, connect_str:str) -> list[int]:
 	year = now.strftime("%Y")
 	month = now.strftime("%m")
 	day = now.strftime("%d")
-	status = [0] * len(docs)
+	status = []
 
 	for doc in docs:
 
@@ -44,6 +44,13 @@ def write_on_minio(docs: list, connect_str:str) -> list[int]:
 			json.dump(art, jsonl_buffer, default = json_serial)
 			jsonl_buffer.write('\n')
 		jsonl_buffer.seek(0)
+
+		image_of_list = doc["list_of_art"].copy()
+		updating_list = []
+		for art in image_of_list:
+			if art["on_postgress"] == False:
+				updating_list.append(art)
+				doc["list_of_art"].remove(art)
 
 		obj_name = f"{doc['topic_name']}/year={year}/month={month}/day={day}/articles_batch.jsonl"
 
@@ -57,13 +64,8 @@ def write_on_minio(docs: list, connect_str:str) -> list[int]:
 			logger.info(f"The article of tpoic :{doc['topic_name']} in date {year}/{month}/{day} is puted into bucket :{setting.minio_bucket_name} successfuly")
 			status.append(1)
 
-			image_of_list = doc["list_of_art"]
-			updating_list = []
-			for art in image_of_list:
-				if art["on_postgress"] == False:
-					updating_list.append(art)
-					doc["list_of_art"].remove(art)
-			update_status(updating_list, connect_str)
+			if updating_list:
+				update_status(updating_list, connect_str)
 		except Exception as e:
 			logger.error(f"Upload failed: {e}")
 			status.append(0)
@@ -88,7 +90,7 @@ def write_on_postgreSQL(docs: list, connect_str:str, status:list, table:str ="ba
 					  VALUES (%s, %s, %s, %s, %s)
 					 """,(art["hash"], art["art_title"], art["time"], now,'uploaded' if status[idx] == 1 else 'pending'))
 					written_art += 1
-					idx += 1
+				idx += 1
 			conn.commit()
 			logger.info(f"{written_art} articles are written on PostgreSQL successfully")
 		except Exception as e:
@@ -106,7 +108,7 @@ def update_status(updating_list: list, connect_str:str, table:str ="batch_data")
 
 					cur.execute(f"""
 					 UPDATE {table} SET status = 'uploaded' WHERE content_hash = %s
-					 """,(art["hash"]))
+					 """,(art["hash"],))
 				conn.commit()
 			logger.info(f"{len(updating_list)} articles are updated on PostgreSQL successfully")
 		except Exception as e:

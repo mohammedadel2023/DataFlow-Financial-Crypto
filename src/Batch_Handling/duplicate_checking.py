@@ -83,4 +83,3 @@ def check_duplication(connect_str: str, docs: list, hash_column: str="content_ha
 					else:
 						art["on_postgress"] = True
 						
-
