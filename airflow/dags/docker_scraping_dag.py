@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 DOCKER_NETWORK_NAME = "d_en_project_mynet" 
 
-IMAGE_NAME = "my_scraper_image:v10"
+IMAGE_NAME = "my_scraper_image:v13"
 
 default_args = {
 	'owner': 'airflow',

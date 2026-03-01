@@ -25,7 +25,10 @@ def write_on_minio(docs: list, connect_str:str) -> list[int]:
 		endpoint_url = setting.minio_endpoint,
 		aws_access_key_id = setting.minio_access_key,
 		aws_secret_access_key = setting.minio_secret_key,
-		config = Config(signature_version = "s3v4"),
+		config = Config(
+			signature_version = "s3v4",
+			s3={'addressing_style': 'path'}
+		),
 		region_name = 'us-east-1'
 	)
 
