@@ -23,13 +23,15 @@ docs = scrap()
 logger.debug(" finish scrap() and enter the hashing() function")
 # 2-cheking the data
 hashing(docs)
-docs_container = check_duplication(connect_str, docs)
+check_duplication(connect_str, docs)
 
-logger.debug(" finish hashing() and check_duplication() and enter the write_on_minio() function")
-# 3- uploading on db's
-status = write_on_minio(docs, connect_str)
 
-logger.debug(" finish write_on_minio() and enter the write_on_postgreSQL() function")
-write_on_postgreSQL(docs, connect_str, status)
+# 3- uploading on PostgreSQL
+logger.debug(" finish hashing() and check_duplication() and enter the write_on_postgreSQL() function")
+write_on_postgreSQL(docs, connect_str)
 
-logger.debug(" finish write_on_postgreSQL() and exit the program")
+# 4- uploading on MinIO
+logger.debug(" finish write_on_postgreSQL() and enter the write_on_minio() function")
+write_on_minio(docs, connect_str)
+
+logger.debug(" finish write_on_minio() and exit the program")

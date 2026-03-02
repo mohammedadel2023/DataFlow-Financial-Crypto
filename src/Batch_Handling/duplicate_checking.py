@@ -66,7 +66,7 @@ def check_duplication(connect_str: str, docs: list, hash_column: str="content_ha
 			logger.debug("Connection with PostgreSQL established successfully")
 			for doc in docs:
 				hash_list = [d["hash"] for d in doc["list_of_art"]]
-				logger.debug(f"Checking for duplicates in {table} for {doc['topic']} topic")
+				logger.debug(f"Checking for duplicates in {table} for {doc['topic_name']} topic")
 				cur.execute(f"""
 				SELECT {hash_column}, {status_column} 
 				FROM {table}
@@ -81,7 +81,7 @@ def check_duplication(connect_str: str, docs: list, hash_column: str="content_ha
 				]
 				for art in doc["list_of_art"]:
 					if art["hash"] in existing_hashes and existing_hashes[art["hash"]] == 'pending':
-						art["on_postgress"] = False
+						art["write_on_postgress"] = False
 					else:
-						art["on_postgress"] = True
+						art["write_on_postgress"] = True
 						
