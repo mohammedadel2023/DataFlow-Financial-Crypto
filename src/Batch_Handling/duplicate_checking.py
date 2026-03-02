@@ -1,9 +1,10 @@
 import hashlib
 import psycopg
 from helper.config import get_setting
-from datetime import datetime
 from dateutil import parser
+import logging
 
+logger = logging.getLogger(__name__)
 
 def time_processing(art):
 
@@ -20,10 +21,8 @@ def hashing(docs:list) -> None:
 		for art in doc["list_of_art"]:
 			sha256 = hashlib.sha256()
 			hash_text = str(time_processing(art)) + art["art_title"]
-			#print(hash_text + "\n")
 			sha256.update(hash_text.encode('utf-8'))
 			art["hash"] = sha256.hexdigest()
-			#print(f"the time of :{art['art_title']} is: {art['time']} and the hash is: {art['hash']}\n")
 
 # Testing >> for hashing
 #docs = [
@@ -61,10 +60,13 @@ def hashing(docs:list) -> None:
 def check_duplication(connect_str: str, docs: list, hash_column: str="content_hash",
 					  status_column: str="status", table: str="batch_data") -> None:
 
+	logger.debug("Starting duplication checking && try to estabilish connection with PostgreSQL")
 	with psycopg.connect(connect_str) as conn:
 		with conn.cursor() as cur:
+			logger.debug("Connection with PostgreSQL established successfully")
 			for doc in docs:
 				hash_list = [d["hash"] for d in doc["list_of_art"]]
+				logger.debug(f"Checking for duplicates in {table} for {doc['topic']} topic")
 				cur.execute(f"""
 				SELECT {hash_column}, {status_column} 
 				FROM {table}
