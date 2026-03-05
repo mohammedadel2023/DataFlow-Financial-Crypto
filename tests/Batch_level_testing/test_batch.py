@@ -1,4 +1,5 @@
 from src.Batch_Handling.duplicate_checking import check_duplication, hashing, time_processing
+from unittest.mock import MagicMock
 from datetime import datetime
 
 def test_time_processing():
@@ -23,3 +24,23 @@ def test_hashing_logic():
     hash1 = sample_data[0]["list_of_art"][0]["hash"]
     hash2 = sample_data2[0]["list_of_art"][0]["hash"]   
     assert hash1 == hash2
+
+def test_check_duplication(mocker):
+    cur_mock = MagicMock()
+    cur_mock.fetchall.return_value = [("abc123", "uploaded")]
+
+    conn_mock = MagicMock()
+    conn_mock.__enter__.return_value = conn_mock
+    conn_mock.cursor.return_value.__enter__.return_value = cur_mock
+
+    mocker.patch("src.Batch_Handling.duplicate_checking.psycopg.connect", return_value = conn_mock)
+
+    docs = [{"topic_name": "crypto", "list_of_art":[
+        {"hash": "abc123", "art_title": "Old article"},
+        {"hash": "xyz999", "art_title": "New article"}
+    ]}]
+
+    check_duplication("fake_connection_string", docs)
+
+    assert len(docs[0]["list_of_art"]) == 1
+    assert docs[0]["list_of_art"][0]["hash"] == "xyz999"
