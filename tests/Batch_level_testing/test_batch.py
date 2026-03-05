@@ -16,5 +16,10 @@ def test_time_processing():
 
 def test_hashing_logic():
     sample_data = [{"list_of_art":[{"time": "Updated Oct 10, 2023", "art_title": "Article 1","hash":""}]}]
+    sample_data2 = [{"list_of_art":[{"time": "Updated Oct 10, 2023", "art_title": "Article 1","hash":""}]}]
     # A hash should always be consistent for the same input
-    assert hashing(sample_data) == hashing(sample_data)
+    hashing(sample_data)
+    hashing(sample_data2)
+    hash1 = sample_data[0]["list_of_art"][0]["hash"]
+    hash2 = sample_data2[0]["list_of_art"][0]["hash"]   
+    assert hash1 == hash2
