@@ -1,6 +1,7 @@
 import boto3
 from botocore.config import Config
 import psycopg
+import argparse
 from helper.config import get_setting
 from datetime import datetime
 import json
@@ -105,3 +106,17 @@ def update_status(updating_list: list, connect_str:str, table:str ="batch_data")
 			logger.info(f"{len(updating_list)} articles are updated on PostgreSQL successfully")
 		except Exception as e:
 			logger.error(f"error ocure before commit data into PostgreSQL :\n{e}")
+
+
+if __name__ == "__main__":
+	setting = get_setting()
+	connect_str = f"dbname={setting.postgres_dbname} user={setting.postgres_user} password={setting.postgres_passward} host={setting.postgres_host} port={setting.postgres_port}"
+
+	args = argparse.ArgumentParser()
+	args.add_argument("--data")
+	args = args.parse_args()
+	with open(args.data, "r") as f:
+		docs = json.load(f)
+
+	write_on_postgreSQL(docs, connect_str)
+	write_on_minio(docs, connect_str)

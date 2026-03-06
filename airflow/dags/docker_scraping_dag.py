@@ -52,7 +52,7 @@ with DAG(
 		api_version = "auto",
 		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
-		command = "python src/Data_Scraping/last_ar_of_fx.py --output {SHARED_DATA_PATH}",
+		command = f"python src/Data_Scraping/last_ar_of_fx.py --output {SHARED_DATA_PATH}",
 		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
@@ -66,7 +66,7 @@ with DAG(
 		api_version = "auto",
 		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
-		command = "python src/Batch_Handling/duplicate_checking.py --data {SHARED_DATA_PATH}",
+		command = f"python src/Batch_Handling/duplicate_checking.py --data {SHARED_DATA_PATH}",
 		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
@@ -80,7 +80,7 @@ with DAG(
 		api_version = "auto",
 		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
-		command = "python src/Batch_Handling/write_on.py --data {SHARED_DATA_PATH}",
+		command = f"python src/Batch_Handling/write_on.py --data {SHARED_DATA_PATH}",
 		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
@@ -88,51 +88,3 @@ with DAG(
 	)
 
 	run_scraper >> run_check_duplication >> run_upload
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#with DAG(
-#	'containerized_scraper_dag',
-#	default_args=default_args,
-#	description='Runs the scraping logic in an isolated Docker container',
-#	schedule='0 9 * * *',
-#	start_date=datetime(2025, 2, 8),
-#	catchup=False,
-#	tags=['docker', 'production']
-#) as dag:
-#
-#	scraper_config = Variable.get("db_config", deserialize_json=True)
-#	
-#	run_scraper = DockerOperator(
-#		task_id='run_scraper_task',
-#		image=IMAGE_NAME,
-#		container_name='scraper_worker_job',
-#		api_version='auto',
-#		
-#		auto_remove='force', 
-#		network_mode=DOCKER_NETWORK_NAME,
-#		command="python src/main.py",
-#
-#		environment = scraper_config,
-#		
-#		docker_url="unix://var/run/docker.sock",
-#		
-#		mount_tmp_dir=False
-#	)

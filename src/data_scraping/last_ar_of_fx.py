@@ -1,11 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-from .art_data import data_arts
-import boto3
-from botocore.config import Config
-from datetime import datetime
+from Data_Scraping.art_data import data_arts
 import json
-import io
+import argparse
 from helper.config import get_setting
 import logging
 
@@ -65,3 +62,14 @@ def scrap():
 		docs.append(doc_topic_data)
 	return docs
 
+if __name__ == "__main__":
+
+	args = argparse.ArgumentParser()
+	args.add_argument("--output")
+	args = args.parse_args()
+
+	setting = get_setting()
+	docs = scrap()
+
+	with open(args.output, "w") as f:
+		json.dump(docs, f, indent=4, default=str)

@@ -2,7 +2,9 @@ import hashlib
 import psycopg
 from dateutil import parser
 import logging
-
+from helper.config import get_setting
+import json
+import argparse
 logger = logging.getLogger(__name__)
 
 def time_processing(art):
@@ -52,3 +54,21 @@ def check_duplication(connect_str: str, docs: list, hash_column: str="content_ha
 					else:
 						art["write_on_postgress"] = True
 						
+if __name__ == "__main__":
+	
+
+	args = argparse.ArgumentParser()
+	args.add_argument("--data")
+	args = args.parse_args()
+	with open(args.data, "r") as f:
+		docs = json.load(f)
+	
+	setting = get_setting()
+	connect_str = f"dbname={setting.postgres_dbname} user={setting.postgres_user} password={setting.postgres_passward} host={setting.postgres_host} port={setting.postgres_port}"
+
+	hashing(docs)
+	check_duplication(connect_str, docs)
+
+	with open(args.data, "w") as f:
+		json.dump(docs, f, default=str)
+
