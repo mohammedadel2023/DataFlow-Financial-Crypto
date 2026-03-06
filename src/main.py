@@ -9,6 +9,8 @@ setting = get_setting()
 
 logging.basicConfig(
     level=setting.Log_level.upper(),
+    filename=setting.log_file,
+    filemode="w",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     force=True
 )

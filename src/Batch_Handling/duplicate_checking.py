@@ -1,6 +1,5 @@
 import hashlib
 import psycopg
-from helper.config import get_setting
 from dateutil import parser
 import logging
 
@@ -24,38 +23,6 @@ def hashing(docs:list) -> None:
 			sha256.update(hash_text.encode('utf-8'))
 			art["hash"] = sha256.hexdigest()
 
-# Testing >> for hashing
-#docs = [
-#	{
-#		"topic":"plicy",
-#		"list_of_art":[
-#			{
-#				"time":"Jan 31, 2026, 6:22 p.m.",
-#				"art_title":"ya rab"
-#			},
-#			{
-#				"time":"Jan 29, 2026, 6:22 p.m.",
-#				"art_title":"ya rabyyy"
-#			}
-#		]
-#	},
-#	{
-#		"topic":"tech",
-#		"list_of_art":[
-#			{
-#				"time":"Jan 31, 2026, 6:22 p.m.",
-#				"art_title":"ya rab"
-#			},
-#			{
-#				"time":"UpdatedJan 31, 2026, 10:46 p.m.",
-#				"art_title":"ya rabyyy"
-#			}
-#		]
-#	}
-#]
-#hashing(docs)
-
-# duplication checking 
 
 def check_duplication(connect_str: str, docs: list, hash_column: str="content_hash",
 					  status_column: str="status", table: str="batch_data") -> None:

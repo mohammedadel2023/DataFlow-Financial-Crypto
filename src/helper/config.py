@@ -14,6 +14,7 @@ class setting (BaseSettings):
 	postgres_port : int
 	AIRFLOW_UID : int
 	Log_level : str
+	log_file : str
 
 
 
