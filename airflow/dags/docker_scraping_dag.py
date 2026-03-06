@@ -50,7 +50,7 @@ with DAG(
 		image = IMAGE_NAME,
 		container_name = "scraper_worker_job",
 		api_version = "auto",
-		auto_remove = "force",
+		auto_remove = "never",
 		network_mode = DOCKER_NETWORK_NAME,
 		command = f"python src/Data_Scraping/last_ar_of_fx.py --output {SHARED_DATA_PATH}",
 		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},

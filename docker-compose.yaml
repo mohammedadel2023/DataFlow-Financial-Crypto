@@ -197,6 +197,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${AIRFLOW_PROJ_DIR:-.}/airflow/dags:/opt/airflow/dags
+      - ${AIRFLOW_PROJ_DIR:-.}/pipeline/data:/host/pipeline/data
+      - ${AIRFLOW_PROJ_DIR:-.}/pipeline/logs:/host/pipeline/logs
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
