@@ -5,22 +5,22 @@ from docker.types import Mount
 from datetime import datetime, timedelta
 
 DOCKER_NETWORK_NAME = "d_en_project_mynet" 
-IMAGE_NAME = "my_scraper_image:v2.02"
+IMAGE_NAME = "my_scraper_image:v2.03"
 SHARED_DATA_PATH = "/shared/scraped_data.json"
-HOST_DATA_DIR = "/host/pipeline/data"
-HOST_LOGS_DIR = "/host/pipeline/logs"
+PIPELINE_DATA_VOLUME = "pipeline_data"
+PIPELINE_LOGS_VOLUME = "pipeline_logs"
 
 
 data_mount = Mount(
-	source = HOST_DATA_DIR,
+	source = PIPELINE_DATA_VOLUME,
 	target = "/shared",
-	type = "bind"
+	type = "volume"
 )
 
 logs_mount = Mount(
-	source = HOST_LOGS_DIR,
+	source = PIPELINE_LOGS_VOLUME,
 	target = "/logs",
-	type = "bind"
+	type = "volume"
 )
 
 default_args = {
@@ -50,7 +50,7 @@ with DAG(
 		image = IMAGE_NAME,
 		container_name = "scraper_worker_job",
 		api_version = "auto",
-		auto_remove = "never",
+		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
 		command = f"python src/Data_Scraping/last_ar_of_fx.py --output {SHARED_DATA_PATH}",
 		environment = {**scraper_config,"LOG_FILE":"/logs/pipeline.log"},
