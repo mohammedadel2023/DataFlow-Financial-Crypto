@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 DOCKER_NETWORK_NAME = "d_en_project_mynet" 
 IMAGE_NAME = "my_scraper_image:v2.02"
 SHARED_DATA_PATH = "/shared/scraped_data.json"
-HOST_DATA_DIR = "/host/pipline/data"
-HOST_LOGS_DIR = "/host/pipline/logs"
+HOST_DATA_DIR = "/host/pipeline/data"
+HOST_LOGS_DIR = "/host/pipeline/logs"
 
 
 data_mount = Mount(
@@ -53,7 +53,7 @@ with DAG(
 		auto_remove = "never",
 		network_mode = DOCKER_NETWORK_NAME,
 		command = f"python src/Data_Scraping/last_ar_of_fx.py --output {SHARED_DATA_PATH}",
-		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
+		environment = {**scraper_config,"LOG_FILE":"/logs/pipeline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
 		mount_tmp_dir = False
@@ -67,7 +67,7 @@ with DAG(
 		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
 		command = f"python src/Batch_Handling/duplicate_checking.py --data {SHARED_DATA_PATH}",
-		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
+		environment = {**scraper_config,"LOG_FILE":"/logs/pipeline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
 		mount_tmp_dir = False
@@ -81,7 +81,7 @@ with DAG(
 		auto_remove = "force",
 		network_mode = DOCKER_NETWORK_NAME,
 		command = f"python src/Batch_Handling/write_on.py --data {SHARED_DATA_PATH}",
-		environment = {**scraper_config,"LOG_FILE":"/logs/pipline.log"},
+		environment = {**scraper_config,"LOG_FILE":"/logs/pipeline.log"},
 		mounts = [data_mount, logs_mount],
 		docker_url = "unix://var/run/docker.sock",
 		mount_tmp_dir = False
