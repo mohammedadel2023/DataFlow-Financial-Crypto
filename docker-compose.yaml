@@ -434,3 +434,9 @@ networks:
 
 #docker exec -it scraper_worker_job cat /app/logs.log here you enter the container and read the logs
 #docker exec -it scraper_worker_job ls here you enter the container and list the files
+
+
+#The command docker run --rm -it -v <volume_name>:/data alpine sh is a powerful, lightweight tool used 
+#to browse or manage persistent data without needing to know the complex host file path. It starts a tiny
+#5MB Alpine Linux container and uses the -v flag to "plug in" your existing Docker volume as a folder named /data inside that container. By using -it and sh, you are dropped into an interactive terminal where you can use standard Linux commands like ls or cd to see your files. Most importantly, the --rm flag ensures that once you type exit, the temporary container is completely deleted, leaving your system
+# clean while keeping your original volume data safe and untouched.
