@@ -434,7 +434,7 @@ services:
       - kafka
     networks:
       - mynet
-    
+
 
 
 
